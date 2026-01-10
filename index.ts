@@ -36,13 +36,19 @@ await Bun.serve({
 	async fetch(req) {
 		const url = new URL(req.url);
 		const pathname = url.pathname;
+		const postReader = new PostsReader();
+		await postReader.initialize();
+
+		if (pathname === "/health") {
+			return new Response("OK", { status: 200 }); // TODO: handle postreader health check
+		}
 
 		if (pathname === "/posts") {
 			const page = Number(url.searchParams.get("page") || "1");
 			const pageSize = url.searchParams.get("pageSize") || "20";
 			const sortBy = (url.searchParams.get("sort") as any) || "timestamp";
 			const order = (url.searchParams.get("order") as any) || "asc";
-			const data = await PostsReader.paginate(page, pageSize, sortBy, order);
+			const data = await postReader.livePaginate(page, pageSize, sortBy, order);
 			return new Response(JSON.stringify(data), {
 				headers: { "Content-Type": "application/json" },
 			});
@@ -58,7 +64,8 @@ await Bun.serve({
 			const sortBy = (url.searchParams.get("sort") as any) || "timestamp";
 			const order = (url.searchParams.get("order") as any) || "asc"; // oldest-first default
 
-			const { items, total } = await PostsReader.paginate(page, pageSize, sortBy, order);
+			postReader.sortAndOrder = { sortBy, order };
+			const { items, total } = await postReader.paginate(page, pageSize);
 
 			const base = (p: number) => `/?page=${p}&pageSize=${pageSize}&sort=${encodeURIComponent(
 				sortBy
@@ -74,10 +81,11 @@ await Bun.serve({
 			const presets = [5,10,20,50];
 			const presetLinks = presets.map(s => `<a href="/?page=1&pageSize=${s}&sort=${encodeURIComponent(sortBy)}&order=${encodeURIComponent(order)}">${s}</a>`).join(' | ');
 
+			// TODO: proper templating engine use
 			const postsHtml = items
 				.map((it) => {
 					const body = escapeHtml(it.text || "").replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br/>");
-					const when = it.created_time ? escapeHtml(String(formatDateValue(it.created_time))) : "";
+					const when = it.timestamp ? escapeHtml(String(formatDateValue(it.timestamp))) : "";
 					const badges: string[] = [];
 					if (it.hasPostData) badges.push('<span class="badge">post-data</span>');
 					if (it.attachmentsCount && it.attachmentsCount > 0) badges.push(`<span class="badge">attachments:${it.attachmentsCount}</span>`);
@@ -87,7 +95,6 @@ await Bun.serve({
 				})
 				.join("\n");
 
-                // TODO: proper templating engine use
 			const html = `<!doctype html>
 <html lang="en">
 	<head>

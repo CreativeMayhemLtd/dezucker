@@ -137,6 +137,52 @@ export class RawPostObject implements RawPost {
     return Array.isArray(all) ? all.length : 0;
   }
 
+  
+  public get formatted(): FormattedPost {
+    const id = this.id ?? null;
+
+    // preserve numeric timestamp(s) as-is on the formatted object
+    const created = this.relevantTimestamp;
+
+    // Explicit text extraction from known string fields only (do NOT coerce numbers)
+    let text = this.text ? this.text : "";
+
+    // fallback to title if present and no data[].post was found
+    if (!text && typeof this.title === 'string') {
+      text = this.title.trim();
+    }
+
+    // Attachments
+    let attachmentsCount = 0;
+    if (Array.isArray(this.attachments)) {
+      // attachments is an array of Attachment; some attachments include a `data` array
+      for (const a of this.attachments) {
+        if (a && Array.isArray((a as any).data)) attachmentsCount += (a as any).data.length;
+      }
+    }
+    const hasAttachments = attachmentsCount > 0;
+
+    // Post data flag
+    const hasPostData = Array.isArray(this.data) && this.data.length > 0;
+
+    // Tags: include only tags with a `name` field that is a string
+    const tags: string[] = Array.isArray(this.tags)
+      ? this.tags.filter((t) => t && typeof t.name === 'string').map((t) => (t as any).name)
+      : [];
+
+    // TODO: Add richer rendering for nested `post.post.body` here if desired later.
+
+    return {
+      id,
+      text,
+      timestamp: created,
+      hasPostData,
+      hasAttachments,
+      attachmentsCount,
+      tags,
+    };
+  }
+
   static fromData(post: RawPost): RawPostObject {
     return new RawPostObject(post);
   }
@@ -145,7 +191,7 @@ export class RawPostObject implements RawPost {
 export interface FormattedPost {
   id?: string | number | null;
   text: string;
-  created_time?: string | number | null;
+  timestamp?: string | number | null;
   hasPostData?: boolean;
   hasAttachments?: boolean;
   attachmentsCount?: number;
