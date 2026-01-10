@@ -1,7 +1,19 @@
-import type { RawPost, FormattedPost } from "./types";
+import { type RawPost, type FormattedPost, PostData, type PostDataEntry, type RawDataEntry, fromData, RawPostObject } from "./types";
 
 export default class PostsReader {
   // TODO: implement actual data and properties instead of just namespacing static methods
+
+  constructor() {
+    // no instance properties for now
+  }
+
+  public rawPosts: RawPostObject[] = [];
+
+  public async initialize(): Promise<void> {
+    // no initialization needed for now
+    const mod = await import("../data/your_posts.json", { assert: { type: "json" } });
+    
+  }
 
   /**
    * Load the JSON data using an import assertion (works in Bun/Esm).
@@ -60,38 +72,25 @@ export default class PostsReader {
     const copy = posts.slice();
 
     copy.sort((a, b) => {
-      const getNumeric = (p: RawPost) => {
-        // prefer explicit timestamp, then created_time, then first data.update_timestamp
-        if (typeof p.timestamp === 'number') return p.timestamp;
-        if (typeof p.created_time === 'number') return p.created_time;
-        if (Array.isArray(p.data)) {
-          for (const d of p.data) {
-            if (typeof d.update_timestamp === 'number') return d.update_timestamp;
-          }
-        }
-        return 0;
-      };
-
+      const objA = RawPostObject.fromData(a);
+      const objB = RawPostObject.fromData(b);
       if (sortBy === 'timestamp' || sortBy === 'created_time') {
-        const na = getNumeric(a);
-        const nb = getNumeric(b);
+        const na = objA.relevantTimestamp;
+        const nb = objB.relevantTimestamp;
         return (na - nb) * dir;
       }
 
-      const getText = (p: RawPost) => {
-        if (sortBy === 'title' && typeof p.title === 'string') return p.title;
-        // text: attempt to extract a post string from data[]
-        if (Array.isArray(p.data)) {
-          for (const d of p.data) {
-            if (typeof d.post === 'string' && d.post.length > 0) return d.post;
-          }
-        }
-        // fallback to title or empty
-        return p.title ?? '';
-      };
-
-      const sa = String(getText(a)).toLowerCase();
-      const sb = String(getText(b)).toLowerCase();
+      if (sortBy === 'title') {
+        const ta = typeof objA.title === 'string' ? objA.title : '';
+        const tb = typeof objB.title === 'string' ? objB.title : '';
+        const sa = ta.toLowerCase();
+        const sb = tb.toLowerCase();
+        if (sa < sb) return -1 * dir;
+        if (sa > sb) return 1 * dir;
+        return 0;
+      }
+      const sa = objA.text ? String(objA.text).toLowerCase() : '';
+      const sb = objB.text ? String(objB.text).toLowerCase() : '';
       if (sa < sb) return -1 * dir;
       if (sa > sb) return 1 * dir;
       return 0;
@@ -105,23 +104,22 @@ export default class PostsReader {
     return Array.isArray(all) ? all.length : 0;
   }
 
+  static textFromPostData(data: RawDataEntry): string | null {
+    const postData = fromData(data);
+    if (!postData.isPostData()) return null;
+    return postData.post ?? null;
+  }
+
   static formatItem(item: RawPost): FormattedPost {
-    const id = item?.id ?? null;
+    const objItem = RawPostObject.fromData(item);
+    const id = objItem.id ?? null;
 
     // preserve numeric timestamp(s) as-is on the formatted object
-    const created = item?.created_time ?? item?.created ?? item?.timestamp ?? null;
+    const created = objItem.relevantTimestamp;
 
     // Explicit text extraction from known string fields only (do NOT coerce numbers)
-    let text = "";
-    // prefer `data[].post` entries
-    if (Array.isArray(item.data)) {
-      for (const d of item.data) {
-        if (d && typeof d.post === 'string' && d.post.trim().length > 0) {
-          text = d.post.trim();
-          break;
-        }
-      }
-    }
+    let text = objItem.text ? objItem.text : "";
+
     // fallback to title if present and no data[].post was found
     if (!text && typeof item.title === 'string') {
       text = item.title.trim();
