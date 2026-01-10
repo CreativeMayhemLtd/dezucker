@@ -44,7 +44,7 @@ If you have ideas, we're open to them. We have experience in a ton of languages 
 Right now? Public domain. As others contribute / things get more complicated? That might change, but it will be open, and we don't want anyone making money off this -- even us. If there IS a money-making organization, it will be a non-profit (in every country there is such a thing), and it will contribute said money to causes that seek the decoupling of human society from social media, and putting it back to something shared, not something parasitic or farmed for someone else's profit.
 
 ## TODO
-- [ ] handle images
+- [X] handle images
 - [ ] handle linking tags to other data (at:// urls, etc)
 - [ ] handle repost plugin interface
 - [ ] bsky repost plugin
