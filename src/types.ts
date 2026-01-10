@@ -37,10 +37,10 @@ export interface RawDataEntry {
   uri?: string;
   description?: string;
   post?: string;
-  media?: PhotoPostDataMedia;
+  media?: MediaMetadataEntry;
 }
 
-export interface PhotoPostDataMedia {
+export interface MediaMetadataEntry {
     uri?: string;
     creation_timestamp?: number;
     update_timestamp?: number;
@@ -48,17 +48,36 @@ export interface PhotoPostDataMedia {
 }
 
 export interface PostMediaMetadata {
-  photo_metadata?: PhotoPostMediaMetadata;
+  photo_metadata?: PhotoMetadataEntry;
 }
 
-export interface PhotoPostMediaData {
+export interface PhotoMetadataEntry {
+  exif_data?: Record<string, any>[];
+}
+
+export class MediaMetadata implements MediaMetadataEntry {
+  constructor(data: MediaMetadataEntry) {
+    Object.assign(this, data);
+  }
+
   uri?: string;
   creation_timestamp?: number;
   update_timestamp?: number;
+  media_metadata?: PostMediaMetadata;
+
+  public isPhotoMetadata(): this is PhotoMetadata {
+    return false;
+  }
 }
 
-export interface PhotoPostMediaMetadata {
-  exif_data?: Record<string, any>[];
+export class PhotoMetadata extends MediaMetadata {
+  constructor(data: MediaMetadataEntry) {
+    super(data);
+  }
+
+  public override isPhotoMetadata(): this is PhotoMetadata {
+    return true;
+  }
 }
 
 export interface RawPost {
@@ -191,7 +210,7 @@ export class RawData implements RawDataEntry {
   uri?: string;
   description?: string;
   post?: string;
-  media?: PhotoPostDataMedia;
+  media?: MediaMetadataClassTypes | MediaMetadataEntry;
 
   public isPostEntry(): this is PostEntry {
     return false;
@@ -227,11 +246,27 @@ export class MediaEntry extends RawData {
   constructor(data: RawDataEntry) {
     super(data);
     Object.assign(this, data);
+    if (this.media) {
+      this.media = fromMediaMetadata(this.media);
+    }
   }
+
+  media?: MediaMetadataClassTypes;
 
   public override isMediaEntry(): this is MediaEntry {
     return true;
   }
+}
+
+export type MediaMetadataClassTypes = MediaMetadata | PhotoMetadata;
+
+export function fromMediaMetadata(data: MediaMetadataEntry): MediaMetadataClassTypes {
+  if (data && typeof data === 'object') {
+    if (data.media_metadata?.photo_metadata) {
+      return new PhotoMetadata(data);
+    }
+  }
+  return new MediaMetadata(data);
 }
 
 export type DataEntryTypes = RawDataEntry;
