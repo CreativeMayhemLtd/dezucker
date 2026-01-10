@@ -205,11 +205,21 @@ export interface FormattedPost {
   hasAttachments?: boolean;
   attachmentsCount?: number;
   tags?: string[];
-  fragments?: any[];
+  fragments?: PostFragment[];
+}
+
+/**
+ * Represents a structured fragment of a post for rendering.
+ */
+export interface PostFragment {
+  text: string;
+  timestamp: number;
+  mediaUri?: string | null;
+  isPhoto?: boolean;
 }
 
 // Type guarding for RawDataEntry 
-export class RawData implements RawDataEntry, Formattable<any> {
+export class RawData implements RawDataEntry, Formattable<any>, Formattable<PostFragment> {
   constructor(data: RawDataEntry) {
     Object.assign(this, data);
   }
@@ -221,7 +231,7 @@ export class RawData implements RawDataEntry, Formattable<any> {
   post?: string;
   media?: MediaMetadataClassTypes | MediaMetadataEntry;
 
-  public get formatted(): any {
+  public get formatted(): PostFragment {
     return {
       text: this.post || this.description || "",
       timestamp: this.relevantTimestamp
@@ -269,7 +279,7 @@ export class MediaEntry extends RawData {
 
   declare media?: MediaMetadataClassTypes;
 
-  public override get formatted(): any {
+  public override get formatted(): PostFragment {
     const base = super.formatted;
     return {
       ...base,
