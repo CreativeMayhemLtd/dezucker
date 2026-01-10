@@ -36,13 +36,7 @@ export interface RawDataEntry {
   update_timestamp?: number;
   uri?: string;
   description?: string;
-}
-
-export interface PostDataEntry extends RawDataEntry {
   post?: string;
-}
-
-export interface PhotoPostDataEntry extends RawDataEntry {
   media?: PhotoPostDataMedia;
 }
 
@@ -96,9 +90,9 @@ export class RawPostObject implements RawPost {
   get text(): string | null {
     if (Array.isArray(this.data)) {
       for (const d of this.data) {
-        const postData = fromData(d);
-        if (postData.isPostData() && typeof postData.post === 'string' && postData.post.trim().length > 0) {
-          return postData.post.trim();
+        const dataObj = fromData(d);
+        if (dataObj.isPostEntry() && typeof dataObj.post === 'string' && dataObj.post.trim().length > 0) {
+          return dataObj.post.trim();
         }
       }
     }
@@ -140,44 +134,32 @@ export class RawPostObject implements RawPost {
   
   public get formatted(): FormattedPost {
     const id = this.id ?? null;
+    const timestamp = this.relevantTimestamp;
 
-    // preserve numeric timestamp(s) as-is on the formatted object
-    const created = this.relevantTimestamp;
-
-    // Explicit text extraction from known string fields only (do NOT coerce numbers)
-    let text = this.text ? this.text : "";
-
-    // fallback to title if present and no data[].post was found
+    let text = this.text || "";
     if (!text && typeof this.title === 'string') {
       text = this.title.trim();
     }
 
-    // Attachments
     let attachmentsCount = 0;
     if (Array.isArray(this.attachments)) {
-      // attachments is an array of Attachment; some attachments include a `data` array
       for (const a of this.attachments) {
-        if (a && Array.isArray((a as any).data)) attachmentsCount += (a as any).data.length;
+        if (a && Array.isArray(a.data)) {
+          attachmentsCount += a.data.length;
+        }
       }
     }
-    const hasAttachments = attachmentsCount > 0;
 
-    // Post data flag
-    const hasPostData = Array.isArray(this.data) && this.data.length > 0;
-
-    // Tags: include only tags with a `name` field that is a string
     const tags: string[] = Array.isArray(this.tags)
-      ? this.tags.filter((t) => t && typeof t.name === 'string').map((t) => (t as any).name)
+      ? this.tags.filter((t) => t && typeof t.name === 'string').map((t) => t.name as string)
       : [];
-
-    // TODO: Add richer rendering for nested `post.post.body` here if desired later.
 
     return {
       id,
       text,
-      timestamp: created,
-      hasPostData,
-      hasAttachments,
+      timestamp,
+      hasPostData: this.dataCount > 0,
+      hasAttachments: attachmentsCount > 0,
       attachmentsCount,
       tags,
     };
@@ -208,16 +190,14 @@ export class RawData implements RawDataEntry {
   update_timestamp?: number;
   uri?: string;
   description?: string;
+  post?: string;
+  media?: PhotoPostDataMedia;
 
-  public isRawData(): this is RawDataEntry {
-    return true;
-  }
-
-  public isPostData(): this is PostDataEntry {
+  public isPostEntry(): this is PostEntry {
     return false;
   }
 
-  public isPhotoPostData(): this is PhotoPostDataEntry {
+  public isMediaEntry(): this is MediaEntry {
     return false;
   }
 
@@ -232,69 +212,39 @@ export class RawData implements RawDataEntry {
   }
 }
 
-export class PostData extends RawData implements PostDataEntry {
-  constructor(data: PostDataEntry) {
+export class PostEntry extends RawData {
+  constructor(data: RawDataEntry) {
     super(data);
     Object.assign(this, data);
   }
 
-  post?: string;
-
-  public override isPostData(): this is PostDataEntry {
+  public override isPostEntry(): this is PostEntry {
     return true;
   }
 }
 
-export class PhotoPostData extends RawData implements PhotoPostDataEntry {
-  constructor(data: PhotoPostDataEntry) {
+export class MediaEntry extends RawData {
+  constructor(data: RawDataEntry) {
     super(data);
     Object.assign(this, data);
   }
 
-  media?: PhotoPostDataMedia;
-
-  public override isPhotoPostData(): this is PhotoPostDataEntry {
+  public override isMediaEntry(): this is MediaEntry {
     return true;
   }
 }
 
-export type DataEntryTypes = RawDataEntry | PostDataEntry | PhotoPostDataEntry;
-export type DataClassTypes = RawData | PostData | PhotoPostData;
+export type DataEntryTypes = RawDataEntry;
+export type DataClassTypes = RawData | PostEntry | MediaEntry;
 
-export function fromData(data: DataEntryTypes): DataClassTypes {
-  switch (typeof data) {
-    case 'object':
-      if (isPhotoPostData(data)) {
-        return new PhotoPostData(data);
-      } else if (isPostData(data)) {
-        return new PostData(data);
-      } else {
-        return new RawData(data);
-      }
-    default:
-      throw new Error('Invalid data type');
-  }
-}
-
-const isPostData = (obj: unknown): obj is PostDataEntry => {
-  return isRawPostDataType<PostDataEntry>(obj, ['post']);
-}
-
-const isPhotoPostData = (obj: unknown): obj is PhotoPostDataEntry => {
-  return isRawPostDataType<PhotoPostDataEntry>(obj, ['media']);
-}
-
-function isRawPostDataType<T extends RawDataEntry>(
-  obj: unknown,
-  properties: (keyof T)[]
-): obj is T {
-  if (obj && typeof obj === 'object') {
-    for (const prop of properties) {
-      if (!(prop in obj)) {
-        return false;
-      }
+export function fromData(data: RawDataEntry): DataClassTypes {
+  if (data && typeof data === 'object') {
+    if ('media' in data) {
+      return new MediaEntry(data);
     }
-    return true;
+    if ('post' in data) {
+      return new PostEntry(data);
+    }
   }
-  return false;
+  return new RawData(data);
 }

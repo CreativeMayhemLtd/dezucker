@@ -1,4 +1,4 @@
-import { type RawPost, type FormattedPost, PostData, type PostDataEntry, type RawDataEntry, fromData, RawPostObject } from "./types";
+import { type RawPost, type FormattedPost, PostEntry, MediaEntry, type RawDataEntry, fromData, RawPostObject } from "./types";
 
 export default class PostsReader {
   constructor() {
