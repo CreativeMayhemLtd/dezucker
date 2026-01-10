@@ -92,7 +92,7 @@ export interface RawPost {
   id?: string | number;
 }
 
-export class RawPostObject implements RawPost {
+export class RawPostObject implements RawPost, Formattable<FormattedPost> {
   constructor(post: RawPost) {
     Object.assign(this, post);
   }
@@ -174,6 +174,8 @@ export class RawPostObject implements RawPost {
       ? this.tags.filter((t) => t && typeof t.name === 'string').map((t) => t.name as string)
       : [];
 
+    const fragments = this.dataObjects?.map(obj => obj.formatted) || [];
+
     return {
       id,
       text,
@@ -182,12 +184,17 @@ export class RawPostObject implements RawPost {
       hasAttachments: attachmentsCount > 0,
       attachmentsCount,
       tags,
+      fragments,
     };
   }
 
   static fromData(post: RawPost): RawPostObject {
     return new RawPostObject(post);
   }
+}
+
+export interface Formattable<T> {
+  readonly formatted: T;
 }
 
 export interface FormattedPost {
@@ -198,10 +205,21 @@ export interface FormattedPost {
   hasAttachments?: boolean;
   attachmentsCount?: number;
   tags?: string[];
+  fragments?: PostFragment[];
+}
+
+/**
+ * Represents a structured fragment of a post for rendering.
+ */
+export interface PostFragment {
+  text: string;
+  timestamp: number;
+  mediaUri?: string | null;
+  isPhoto?: boolean;
 }
 
 // Type guarding for RawDataEntry 
-export class RawData implements RawDataEntry {
+export class RawData implements RawDataEntry, Formattable<any>, Formattable<PostFragment> {
   constructor(data: RawDataEntry) {
     Object.assign(this, data);
   }
@@ -212,6 +230,13 @@ export class RawData implements RawDataEntry {
   description?: string;
   post?: string;
   media?: MediaMetadataClassTypes | MediaMetadataEntry;
+
+  public get formatted(): PostFragment {
+    return {
+      text: this.post || this.description || "",
+      timestamp: this.relevantTimestamp
+    };
+  }
 
   public isPostEntry(): this is PostEntry {
     return false;
@@ -254,6 +279,15 @@ export class MediaEntry extends RawData {
 
   declare media?: MediaMetadataClassTypes;
 
+  public override get formatted(): PostFragment {
+    const base = super.formatted;
+    return {
+      ...base,
+      mediaUri: this.media?.uri || this.uri || null,
+      isPhoto: this.media?.isPhotoMetadata() || false
+    };
+  }
+
   public override isMediaEntry(): this is MediaEntry {
     return true;
   }
@@ -270,7 +304,6 @@ export function fromMediaMetadata(data: MediaMetadataEntry): MediaMetadataClassT
   return new MediaMetadata(data);
 }
 
-export type DataEntryTypes = RawDataEntry;
 export type DataClassTypes = RawData | PostEntry | MediaEntry;
 
 export function fromData(data: RawDataEntry): DataClassTypes {
