@@ -94,8 +94,17 @@ export interface RawPost {
 
 export class RawPostObject implements RawPost, Formattable<FormattedPost> {
   constructor(post: RawPost) {
+    // Filter out literal empty objects from the source data array before capturing or assigning.
+    // This preserves all data autonomy (unknown keys are kept) while removing structural noise.
+    if (Array.isArray(post.data)) {
+      post.data = post.data.filter(d => d && typeof d === 'object' && Object.keys(d).length > 0);
+    }
+
+    this._rawSource = post as Record<string, any>;
     Object.assign(this, post);
   }
+
+  private _rawSource: Record<string, any>;
 
   timestamp?: number;
   title?: string;
@@ -110,7 +119,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
     if (Array.isArray(this.data)) {
       for (const d of this.data) {
         const dataObj = fromData(d);
-        if (dataObj.isPostEntry() && typeof dataObj.post === 'string' && dataObj.post.trim().length > 0) {
+        if (dataObj != null && dataObj.isPostEntry() && typeof dataObj.post === 'string' && dataObj.post.trim().length > 0) {
           return dataObj.post.trim();
         }
       }
@@ -120,8 +129,14 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
 
   get dataObjects(): DataClassTypes[] | null {
     if (Array.isArray(this.data)) {
-      return this.data.map(d => fromData(d));
+      return this.data.map(d => fromData(d)).filter((d): d is DataClassTypes => d !== null);
     }
+    
+    if (this.data && typeof this.data === 'object') {
+      const dataObj = fromData(this.data as any);
+      return dataObj ? [dataObj] : null;
+    }
+
     return null;
   }
 
@@ -140,7 +155,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
       const dataRaw = this.data[0];
       if (dataRaw && typeof dataRaw === 'object') {
         const dataObj = fromData(dataRaw);
-        return dataObj.relevantTimestamp;
+        return dataObj?.relevantTimestamp ?? 0;
       }
     }
     return 0;
@@ -175,15 +190,17 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
       : [];
 
     const fragments = this.dataObjects?.map(obj => obj.formatted) || [];
+    const meaningfulEntriesCount = fragments.filter(f => f.isMeaningful).length;
 
     return {
       id,
       text,
       timestamp,
       attachmentsCount,
+      meaningfulEntriesCount,
       tags,
       fragments,
-      _raw: JSON.stringify(this, null, 2),
+      _raw: this._rawSource,
     };
   }
 
@@ -201,9 +218,10 @@ export interface FormattedPost {
   text: string;
   timestamp?: string | number | null;
   attachmentsCount?: number;
+  meaningfulEntriesCount: number;
   tags?: string[];
   fragments?: PostFragment[];
-  _raw?: string;
+  _raw?: any;
 }
 
 /**
@@ -214,14 +232,19 @@ export interface PostFragment {
   timestamp: number;
   mediaUri?: string | null;
   isPhoto?: boolean;
-  _raw?: string;
+  isUnknown?: boolean;
+  isMeaningful?: boolean;
+  _raw?: any;
 }
 
 // Type guarding for RawDataEntry 
 export class RawData implements RawDataEntry, Formattable<any>, Formattable<PostFragment> {
   constructor(data: RawDataEntry) {
+    this._rawSource = data as Record<string, any>;
     Object.assign(this, data);
   }
+
+  protected _rawSource: Record<string, any>;
 
   creation_timestamp?: number;
   update_timestamp?: number;
@@ -234,7 +257,8 @@ export class RawData implements RawDataEntry, Formattable<any>, Formattable<Post
     return {
       text: this.post || this.description || "",
       timestamp: this.relevantTimestamp,
-      _raw: JSON.stringify(this, null, 2),
+      isMeaningful: true,
+      _raw: this._rawSource,
     };
   }
 
@@ -268,6 +292,22 @@ export class PostEntry extends RawData {
   }
 }
 
+export class UnknownRawData extends RawData {
+  constructor(data: RawDataEntry) {
+    super(data);
+  }
+
+  public override get formatted(): PostFragment {
+    return {
+      text: "",
+      timestamp: this.relevantTimestamp,
+      isUnknown: true,
+      isMeaningful: false,
+      _raw: this._rawSource,
+    };
+  }
+}
+
 export class MediaEntry extends RawData {
   constructor(data: RawDataEntry) {
     super(data);
@@ -285,7 +325,8 @@ export class MediaEntry extends RawData {
       ...base,
       mediaUri: this.media?.uri || this.uri || null,
       isPhoto: this.media?.isPhotoMetadata() || false,
-      _raw: JSON.stringify(this, null, 2),
+      isMeaningful: true,
+      _raw: this._rawSource,
     };
   }
 
@@ -305,9 +346,9 @@ export function fromMediaMetadata(data: MediaMetadataEntry): MediaMetadataClassT
   return new MediaMetadata(data);
 }
 
-export type DataClassTypes = RawData | PostEntry | MediaEntry;
+export type DataClassTypes = RawData | PostEntry | MediaEntry | UnknownRawData;
 
-export function fromData(data: RawDataEntry): DataClassTypes {
+export function fromData(data: RawDataEntry): DataClassTypes | null {
   if (data && typeof data === 'object') {
     if ('media' in data) {
       return new MediaEntry(data);
@@ -315,6 +356,14 @@ export function fromData(data: RawDataEntry): DataClassTypes {
     if ('post' in data) {
       return new PostEntry(data);
     }
+    // If it has at least one of our recognized "Keep" keys (like update_timestamp), it's a RawData
+    const meaningfulKeys = ['post', 'uri', 'media', 'description', 'attachments', 'update_timestamp', 'creation_timestamp', 'title', 'tags'];
+    const hasMeaningfulKey = Object.keys(data).some(key => meaningfulKeys.includes(key));
+    
+    if (hasMeaningfulKey) {
+      return new RawData(data);
+    }
+    return new UnknownRawData(data);
   }
-  return new RawData(data);
+  return null;
 }

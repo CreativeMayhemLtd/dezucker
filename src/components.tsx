@@ -91,7 +91,7 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   if (post._raw) {
     debugBlocks.push(
       <pre id={postId} className="debug-json">
-        {post._raw}
+        {JSON.stringify(post._raw, null, 2)}
       </pre>
     );
   }
@@ -101,14 +101,14 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   }
   
   if (post.fragments && post.fragments.length > 0) {
-    badges.push(<Badge label={`entries:${post.fragments.length}`} targetId={post._raw ? postId : undefined} />);
+    badges.push(<Badge label={`entries:${post.meaningfulEntriesCount}`} targetId={post._raw ? postId : undefined} />);
     
     post.fragments.forEach((frag, idx) => {
       if (frag._raw) {
         const fragId = `${postId}-frag-${idx}`;
         debugBlocks.push(
           <pre id={fragId} className="debug-json">
-            {frag._raw}
+            {JSON.stringify(frag._raw, null, 2)}
           </pre>
         );
         // We could optionally add more badges here if we wanted to toggle specific fragments,
