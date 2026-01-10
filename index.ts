@@ -30,7 +30,7 @@ function formatDateValue(v: any) {
 	return d.toLocaleString();
 }
 
-await Bun.serve({
+Bun.serve({
     // TODO: Make this a type
 	port,
 	async fetch(req) {
@@ -90,6 +90,7 @@ await Bun.serve({
 					const badges: string[] = [];
 					if (it.hasPostData) badges.push('<span class="badge">post-data</span>');
 					if (it.attachmentsCount && it.attachmentsCount > 0) badges.push(`<span class="badge">attachments:${it.attachmentsCount}</span>`);
+					if (Array.isArray(it.fragments) && it.fragments.length > 0) badges.push('<span class="badge">entries: ' + it.fragments.length + '</span>');
 					if (Array.isArray(it.tags) && it.tags.length) badges.push(`<span class="badge">people: ${escapeHtml(it.tags.join(', '))}</span>`);
 					const meta = [when ? `<span class="when">${when}</span>` : "", badges.join(' ')].filter(Boolean).join(' ');
 					return `<article class="post"><p>${body}</p>${meta ? `<div class="meta">${meta}</div>` : ""}</article>`;
