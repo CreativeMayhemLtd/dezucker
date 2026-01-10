@@ -136,10 +136,11 @@ export class RawPostObject implements RawPost {
       return this.created;
     }
     if (Array.isArray(this.data)) {
-      for (const d of this.data) {
-        const dataObj = fromData(d);
-        // todo: determine if the first one is the right choice?
-        return dataObj.relevantTimestamp
+      // TODO: for now, use the first.
+      const dataRaw = this.data[0];
+      if (dataRaw && typeof dataRaw === 'object') {
+        const dataObj = fromData(dataRaw);
+        return dataObj.relevantTimestamp;
       }
     }
     return 0;
@@ -251,7 +252,7 @@ export class MediaEntry extends RawData {
     }
   }
 
-  media?: MediaMetadataClassTypes;
+  declare media?: MediaMetadataClassTypes;
 
   public override isMediaEntry(): this is MediaEntry {
     return true;
