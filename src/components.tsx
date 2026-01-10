@@ -1,12 +1,15 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 import { h, Fragment } from "./renderer.tsx";
-import type { FormattedPost } from "./types.tsx";
+import type { FormattedPost, PostFragment } from "./types.tsx";
+import { pluginRegistry } from "./plugins/registry";
 
 /**
  * Base layout component for the FB Reader.
  */
 export function Layout({ title, children }: { title: string; children?: any }) {
+  const plugins = pluginRegistry.listPlugins();
+
   return (
     <html lang="en">
       <head>
@@ -15,7 +18,8 @@ export function Layout({ title, children }: { title: string; children?: any }) {
         <title>{title}</title>
         <style>{`
           body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#1c1e21}
-          header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+          header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+          .header-left{display:flex;align-items:center;gap:12px}
           .controls{margin:12px 0;background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
           .post{background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-bottom:16px;width:50%;min-width:640px}
           .post p{margin:0 0 12px;line-height:1.5}
@@ -30,6 +34,7 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           .media-item img{width:100%;height:auto;display:block;object-fit:cover}
           a{color:#1877f2;text-decoration:none}
           a:hover{text-decoration:underline}
+          select{padding:4px 8px;border-radius:6px;border:1px solid #ddd}
         `}</style>
         <script>{`
           function toggleDebug(id) {
@@ -39,11 +44,47 @@ export function Layout({ title, children }: { title: string; children?: any }) {
               el.style.display = isHidden ? 'block' : 'none';
             }
           }
+
+          async function exportPost(postId) {
+            const selector = document.getElementById('plugin-selector');
+            const pluginSlug = selector ? selector.value : 'internal-json';
+            
+            try {
+              const response = await fetch('/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  pluginSlug,
+                  postIds: [postId],
+                  config: { targetDirectory: 'exports' }
+                })
+              });
+              
+              const result = await response.json();
+              if (result.success) {
+                alert('Export successful: ' + result.message);
+              } else {
+                alert('Export failed: ' + result.error);
+              }
+            } catch (err) {
+              alert('Export failed: ' + err.message);
+            }
+          }
         `}</script>
       </head>
       <body>
         <header>
-          <h1>{title}</h1>
+          <div className="header-left">
+            <h1>{title}</h1>
+          </div>
+          <div className="header-right">
+            <label htmlFor="plugin-selector" style="margin-right: 8px; font-size: 14px">Export Method:</label>
+            <select id="plugin-selector">
+              {plugins.map(p => (
+                <option value={p.slug}>{p.name}</option>
+              ))}
+            </select>
+          </div>
         </header>
         {children}
       </body>
@@ -71,7 +112,7 @@ export function Badge({ label, targetId }: { label: string; targetId?: string })
 /**
  * Renders a single image with a container.
  */
-export function MediaImage({ uri, alt }: { uri: string; alt?: string }) {
+export function MediaImage({ uri, alt, key }: { uri: string; alt?: string; key?: any }) {
   return (
     <div className="media-item">
       <img src={uri} alt={alt || "Media attachment"} loading="lazy" />
@@ -96,7 +137,7 @@ export function MediaGallery({ items }: { items: { uri: string; alt?: string }[]
 /**
  * Renders a post card with its metadata.
  */
-export function PostCard({ post, when, key }: { post: FormattedPost; when: string; key?: string | number }) {
+export function PostCard({ post, when, key }: { post: FormattedPost; when: string; key?: any }) {
   const postId = `post-${post.timestamp || Math.random().toString(36).substring(7)}`;
   
   const body = (post.text || "")
@@ -160,6 +201,17 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   if (post.tags && post.tags.length > 0) {
     badges.push(<Badge label={`people:${post.tags.join(", ")}`} />);
   }
+
+  const exportId = String(post.id || post.timestamp);
+  badges.push(
+    <span 
+      className="badge clickable" 
+      style="background: #1877f2; color: #fff"
+      onclick={`exportPost('${exportId}')`}
+    >
+      Export
+    </span>
+  );
 
   const meta = (
     <div className="meta">

@@ -5,21 +5,31 @@ export type JSXElement = {
 };
 
 /**
- * JSX Factory function to create element objects.
+ * Fragment component for grouping children without a wrapper element.
  */
-export function h(tag: string | Function, props: any, ...children: any[]): JSXElement {
-  return {
-    tag,
-    props: props || {},
-    children: children.flat().filter(c => c !== null && c !== undefined && c !== false),
-  };
+export function Fragment({ children }: any) {
+  return children;
 }
 
 /**
- * Fragment component for grouping children without a wrapper element.
+ * JSX Factory function to create element objects.
  */
-export function Fragment({ children }: { children: any[] }) {
-  return children;
+export function h(tag: string | Function, props: any, ...children: any[]): JSXElement {
+  const flattenedChildren = children.flat().filter(c => c !== null && c !== undefined && c !== false);
+  
+  if (tag === Fragment) {
+    return {
+      tag: "FRAGMENT",
+      props: props || {},
+      children: flattenedChildren,
+    };
+  }
+
+  return {
+    tag,
+    props: props || {},
+    children: flattenedChildren,
+  };
 }
 
 const ESCAPE_MAP: Record<string, string> = {
@@ -58,9 +68,13 @@ export function render(node: any): string {
     return render(tag({ ...props, children }));
   }
 
+  if (tag === "FRAGMENT") {
+    return children.map(render).join("");
+  }
+
   const attrs = Object.entries(props || {})
     .map(([key, value]) => {
-      if (key === "children" || value == null || value === false) return "";
+      if (key === "children" || key === "key" || value == null || value === false) return "";
       
       let attrName = key;
       if (key === "className") attrName = "class";

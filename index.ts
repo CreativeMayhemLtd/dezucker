@@ -1,5 +1,13 @@
 import PostsReader from "./src/post-reader";
 import { renderPostsPage } from "./src/views.tsx";
+import { pluginRegistry } from "./src/plugins/registry";
+import { internalJsonPlugin } from "./src/plugins/internal-json";
+import { markdownExportPlugin } from "./src/plugins/markdown-export";
+import { exportOrchestrator } from "./src/plugins/orchestrator";
+
+// Register default internal plugins
+pluginRegistry.register(internalJsonPlugin);
+pluginRegistry.register(markdownExportPlugin);
 
 // TODO: Make a real service and inject it
 const port = Number(process.env.PORT || 3000);
@@ -17,6 +25,12 @@ Bun.serve({
 
 		if (pathname === "/health") {
 			return new Response("OK", { status: 200 }); // TODO: handle postreader health check
+		}
+
+		if (pathname === "/plugins") {
+			return new Response(JSON.stringify(pluginRegistry.listPlugins()), {
+				headers: { "Content-Type": "application/json" },
+			});
 		}
 
 		if (pathname.startsWith("/data/")) {
@@ -37,6 +51,39 @@ Bun.serve({
 			return new Response(JSON.stringify(data), {
 				headers: { "Content-Type": "application/json" },
 			});
+		}
+
+		if (pathname === "/export" && req.method === "POST") {
+			try {
+				const body = await req.json();
+				// @ts-ignore
+				const { pluginSlug, postIds, config } = body;
+
+				if (!pluginSlug) {
+					return new Response("Missing pluginSlug", { status: 400 });
+				}
+
+				let postsToExport = postReader.posts;
+				if (postIds && Array.isArray(postIds)) {
+					const idSet = new Set(postIds.map(String));
+					postsToExport = postsToExport.filter(p => p.id && idSet.has(String(p.id)) || idSet.has(String(p.timestamp)));
+				}
+
+				await exportOrchestrator.exportBatch(pluginSlug, postsToExport, config);
+
+				return new Response(JSON.stringify({ 
+					success: true, 
+					count: postsToExport.length,
+					message: `Exported ${postsToExport.length} posts using ${pluginSlug}`
+				}), {
+					headers: { "Content-Type": "application/json" },
+				});
+			} catch (err: any) {
+				return new Response(JSON.stringify({ 
+					success: false, 
+					error: err.message 
+				}), { status: 500, headers: { "Content-Type": "application/json" } });
+			}
 		}
 
 		if (pathname === "/" || pathname === "/index.html") {

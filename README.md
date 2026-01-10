@@ -46,6 +46,6 @@ Right now? Public domain. As others contribute / things get more complicated? Th
 ## TODO
 - [X] handle images
 - [ ] handle linking tags to other data (at:// urls, etc)
-- [ ] handle repost plugin interface
+- [X] handle repost plugin interface
 - [ ] bsky repost plugin
 - [ ] long post services repost plugins
