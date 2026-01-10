@@ -68,13 +68,19 @@ export function render(node: any): string {
       
       if (value === true) return ` ${attrName}`;
       
-      return ` ${attrName}="${escapeHtml(String(value))}"`;
+      const isEventHandler = key.startsWith("on");
+      const escapedValue = isEventHandler 
+        ? String(value).replace(/"/g, "&quot;") 
+        : escapeHtml(String(value));
+      
+      return ` ${attrName}="${escapedValue}"`;
     })
     .join("");
 
   const selfClosing = ["meta", "link", "img", "br", "hr", "input", "area", "base", "col", "embed", "param", "source", "track", "wbr"].includes(tag);
   
-  const content = children.map(render).join("");
+  const isRawTag = typeof tag === "string" && ["script", "style"].includes(tag);
+  const content = children.map(c => isRawTag && typeof c === "string" ? c : render(c)).join("");
 
   if (selfClosing && !content) {
     return `<${tag}${attrs} />`;

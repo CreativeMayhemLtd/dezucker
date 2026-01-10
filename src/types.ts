@@ -183,6 +183,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
       attachmentsCount,
       tags,
       fragments,
+      _raw: JSON.stringify(this, null, 2),
     };
   }
 
@@ -202,6 +203,7 @@ export interface FormattedPost {
   attachmentsCount?: number;
   tags?: string[];
   fragments?: PostFragment[];
+  _raw?: string;
 }
 
 /**
@@ -212,6 +214,7 @@ export interface PostFragment {
   timestamp: number;
   mediaUri?: string | null;
   isPhoto?: boolean;
+  _raw?: string;
 }
 
 // Type guarding for RawDataEntry 
@@ -230,7 +233,8 @@ export class RawData implements RawDataEntry, Formattable<any>, Formattable<Post
   public get formatted(): PostFragment {
     return {
       text: this.post || this.description || "",
-      timestamp: this.relevantTimestamp
+      timestamp: this.relevantTimestamp,
+      _raw: JSON.stringify(this, null, 2),
     };
   }
 
@@ -280,7 +284,8 @@ export class MediaEntry extends RawData {
     return {
       ...base,
       mediaUri: this.media?.uri || this.uri || null,
-      isPhoto: this.media?.isPhotoMetadata() || false
+      isPhoto: this.media?.isPhotoMetadata() || false,
+      _raw: JSON.stringify(this, null, 2),
     };
   }
 
