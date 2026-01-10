@@ -180,8 +180,6 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
       id,
       text,
       timestamp,
-      hasPostData: this.dataCount > 0,
-      hasAttachments: attachmentsCount > 0,
       attachmentsCount,
       tags,
       fragments,
@@ -201,8 +199,6 @@ export interface FormattedPost {
   id?: string | number | null;
   text: string;
   timestamp?: string | number | null;
-  hasPostData?: boolean;
-  hasAttachments?: boolean;
   attachmentsCount?: number;
   tags?: string[];
   fragments?: PostFragment[];

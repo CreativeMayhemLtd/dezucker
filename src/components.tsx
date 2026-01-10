@@ -59,15 +59,14 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
     ));
 
   const badges = [];
-  if (post.hasPostData) badges.push(<Badge label="post-data" />);
   if (post.attachmentsCount && post.attachmentsCount > 0) {
     badges.push(<Badge label={`attachments:${post.attachmentsCount}`} />);
   }
   if (post.fragments && post.fragments.length > 0) {
-    badges.push(<Badge label={`entries: ${post.fragments.length}`} />);
+    badges.push(<Badge label={`entries:${post.fragments.length}`} />);
   }
   if (post.tags && post.tags.length > 0) {
-    badges.push(<Badge label={`people: ${post.tags.join(", ")}`} />);
+    badges.push(<Badge label={`people:${post.tags.join(", ")}`} />);
   }
 
   const meta = (
