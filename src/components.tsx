@@ -17,7 +17,7 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:16px;background:#f0f2f5;color:#1c1e21}
           header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
           .controls{margin:12px 0;background:#fff;padding:12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1)}
-          .post{background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-bottom:16px}
+          .post{background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-bottom:16px;width:50%;min-width:640px}
           .post p{margin:0 0 12px;line-height:1.5}
           .meta{border-top:1px solid #ebedf0;padding-top:12px;margin-top:12px;color:#65676b;font-size:12px}
           .badge{display:inline-block;background:#e4e6eb;padding:4px 8px;border-radius:6px;margin-right:8px;font-size:12px;color:#050505;font-weight:600}
@@ -25,6 +25,9 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           .badge.clickable:hover{background:#dbeafe}
           .when{margin-right:12px;color:#65676b;font-size:12px}
           .debug-json{display:none;background:#1c1e21;color:#e4e6eb;padding:16px;border-radius:8px;margin:12px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,liberation mono,courier new,monospace;font-size:12px;overflow-x:auto;white-space:pre-wrap;border:1px solid #3e4042}
+          .media-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:12px 0;max-width:80%}
+          .media-item{width:100%;border-radius:8px;overflow:hidden;border:1px solid #ebedf0}
+          .media-item img{width:100%;height:auto;display:block;object-fit:cover}
           a{color:#1877f2;text-decoration:none}
           a:hover{text-decoration:underline}
         `}</style>
@@ -66,6 +69,31 @@ export function Badge({ label, targetId }: { label: string; targetId?: string })
 }
 
 /**
+ * Renders a single image with a container.
+ */
+export function MediaImage({ uri, alt }: { uri: string; alt?: string }) {
+  return (
+    <div className="media-item">
+      <img src={uri} alt={alt || "Media attachment"} loading="lazy" />
+    </div>
+  );
+}
+
+/**
+ * Renders a grid of media items.
+ */
+export function MediaGallery({ items }: { items: { uri: string; alt?: string }[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="media-gallery">
+      {items.map((item, i) => (
+        <MediaImage key={i} uri={item.uri} alt={item.alt} />
+      ))}
+    </div>
+  );
+}
+
+/**
  * Renders a post card with its metadata.
  */
 export function PostCard({ post, when, key }: { post: FormattedPost; when: string; key?: string | number }) {
@@ -86,6 +114,7 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
 
   const badges = [];
   const debugBlocks = [];
+  const mediaItems: { uri: string; alt?: string }[] = [];
 
   // Main post debug block
   if (post._raw) {
@@ -104,6 +133,9 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
     badges.push(<Badge label={`entries:${post.meaningfulEntriesCount}`} targetId={post._raw ? postId : undefined} />);
     
     post.fragments.forEach((frag, idx) => {
+      if (frag.webUri && frag.isPhoto) {
+        mediaItems.push({ uri: frag.webUri, alt: frag.text });
+      }
       if (frag._raw) {
         const fragId = `${postId}-frag-${idx}`;
         debugBlocks.push(
@@ -113,6 +145,14 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
         );
         // We could optionally add more badges here if we wanted to toggle specific fragments,
         // but for now let's stick to the main post toggle for the entries badge.
+      }
+    });
+  }
+
+  if (post.attachmentMedia && post.attachmentMedia.length > 0) {
+    post.attachmentMedia.forEach((media) => {
+      if (media.webUri && media.isPhoto) {
+        mediaItems.push({ uri: media.webUri });
       }
     });
   }
@@ -132,6 +172,7 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   return (
     <article className="post">
       {body}
+      <MediaGallery items={mediaItems} />
       {meta}
     </article>
   );

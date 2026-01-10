@@ -19,6 +19,14 @@ Bun.serve({
 			return new Response("OK", { status: 200 }); // TODO: handle postreader health check
 		}
 
+		if (pathname.startsWith("/data/")) {
+			const file = Bun.file(pathname.substring(1));
+			if (await file.exists()) {
+				return new Response(file);
+			}
+			return new Response("Media not found", { status: 404 });
+		}
+
 		if (pathname === "/posts") {
 			const page = Number(url.searchParams.get("page") || "1");
 			const pageSize = url.searchParams.get("pageSize") || "20";

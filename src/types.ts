@@ -21,6 +21,8 @@ export interface AttachmentData {
   };
   // some entries include arbitrary fields like `update_timestamp` for edits, etc.
   update_timestamp?: number;
+  uri?: string;
+  media?: MediaMetadataEntry;
 }
 
 export interface Attachment {
@@ -192,6 +194,27 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
     const fragments = this.dataObjects?.map(obj => obj.formatted) || [];
     const meaningfulEntriesCount = fragments.filter(f => f.isMeaningful).length;
 
+    const attachmentMedia: PostFragment[] = [];
+    if (Array.isArray(this.attachments)) {
+      for (const a of this.attachments) {
+        if (a && Array.isArray(a.data)) {
+          for (const d of a.data) {
+            const uri = d.media?.uri || d.uri;
+            if (uri) {
+              attachmentMedia.push({
+                text: "",
+                timestamp: d.update_timestamp || timestamp,
+                mediaUri: uri,
+                webUri: `/data/${uri}`,
+                isPhoto: d.media?.media_metadata?.photo_metadata != null || (uri.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null),
+                isMeaningful: true
+              });
+            }
+          }
+        }
+      }
+    }
+
     return {
       id,
       text,
@@ -200,6 +223,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
       meaningfulEntriesCount,
       tags,
       fragments,
+      attachmentMedia,
       _raw: this._rawSource,
     };
   }
@@ -221,6 +245,7 @@ export interface FormattedPost {
   meaningfulEntriesCount: number;
   tags?: string[];
   fragments?: PostFragment[];
+  attachmentMedia?: PostFragment[];
   _raw?: any;
 }
 
@@ -231,6 +256,7 @@ export interface PostFragment {
   text: string;
   timestamp: number;
   mediaUri?: string | null;
+  webUri?: string | null;
   isPhoto?: boolean;
   isUnknown?: boolean;
   isMeaningful?: boolean;
@@ -287,6 +313,17 @@ export class PostEntry extends RawData {
     Object.assign(this, data);
   }
 
+  public override get formatted(): PostFragment {
+    const base = super.formatted;
+    const uri = this.uri || null;
+    return {
+      ...base,
+      mediaUri: uri,
+      webUri: uri ? `/data/${uri}` : null,
+      isPhoto: uri?.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null,
+    };
+  }
+
   public override isPostEntry(): this is PostEntry {
     return true;
   }
@@ -321,10 +358,12 @@ export class MediaEntry extends RawData {
 
   public override get formatted(): PostFragment {
     const base = super.formatted;
+    const uri = this.media?.uri || this.uri || null;
     return {
       ...base,
-      mediaUri: this.media?.uri || this.uri || null,
-      isPhoto: this.media?.isPhotoMetadata() || false,
+      mediaUri: uri,
+      webUri: uri ? `/data/${uri}` : null,
+      isPhoto: this.media?.isPhotoMetadata() || (uri?.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null),
       isMeaningful: true,
       _raw: this._rawSource,
     };
