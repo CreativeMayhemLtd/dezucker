@@ -31,9 +31,13 @@ For issues, for now please only open issues for new structures introduced after 
 
 ### Design decisions
 
-Yes, this is under contributing, because we're not tied to Bun, or even typescript, just strong typing, so that simple code can be written. This is quick-and-dirty right now, but we'd like to see this usable as a package, not just a tool. We also don't want to tie it to platform, hence the (_current_) choice to use TypeScript and Bun.
+The project prioritizes modularity and strong typing, ensuring it can eventually be consumed as a library or package.
 
-If you have ideas, We're open to them. We have experience in a ton of languages of varying complexity and age among us, and we can contribute at the same level in nearly all of them.
+- **Runtime**: Currently uses Bun.
+- **Rendering**: Zero-dependency, domain-bound system using TSX. Data objects handle their own representations.
+- **Architecture**: Separation of concerns between raw data, business logic, and component-based views.
+
+If you have ideas, we're open to them. We have experience in a ton of languages of varying complexity and age among us, and we can contribute at the same level in nearly all of them.
 
 ### Licensing 
 
