@@ -48,7 +48,8 @@ await Bun.serve({
 			const pageSize = url.searchParams.get("pageSize") || "20";
 			const sortBy = (url.searchParams.get("sort") as any) || "timestamp";
 			const order = (url.searchParams.get("order") as any) || "asc";
-			const data = await postReader.livePaginate(page, pageSize, sortBy, order);
+			postReader.sortAndOrder = { sortBy, order };
+			const data = await postReader.paginate(page, pageSize);
 			return new Response(JSON.stringify(data), {
 				headers: { "Content-Type": "application/json" },
 			});
