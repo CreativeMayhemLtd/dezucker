@@ -8,12 +8,13 @@
     "start": "bun index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "^1.3.5"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@atproto/common": "^0.5.7",
     "tsx": "^4.21.0"
   }
 }
