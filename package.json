@@ -14,7 +14,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@atproto/common": "^0.5.7",
+    "@atproto/common-web": "^0.4.11",
     "tsx": "^4.21.0"
   }
 }

@@ -8,6 +8,7 @@ export type TagHolder = {
 };
 
 export interface FormattedPost {
+    tid?: string | null; // for atproto; will move to the plugin as a transform when implemented
     id?: string | number | null;
     text: string;
     timestamp?: string | number | null;
