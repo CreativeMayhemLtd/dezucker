@@ -169,7 +169,7 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   if (post.attachmentsCount && post.attachmentsCount > 0) {
     badges.push(<Badge label={`attachments:${post.attachmentsCount}`} targetId={post._raw ? postId : undefined} />);
   }
-  
+
   if (post.fragments && post.fragments.length > 0) {
     badges.push(<Badge label={`entries:${post.meaningfulEntriesCount}`} targetId={post._raw ? postId : undefined} />);
     
@@ -198,8 +198,18 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
     });
   }
 
-  if (post.tags && post.tags.length > 0) {
-    badges.push(<Badge label={`people:${post.tags.join(", ")}`} />);
+  if (post.tags && post.tags.length > 0) { // TODO: handle links
+    const tags = post.tags;
+    const tagCollections = new Set<string>(tags.map(t => t.tagCollection ?? "unknown"));
+    tagCollections.forEach(collection => {
+      //  TODO: handle other collection types here
+      switch (collection) {
+        case "people":
+          const names = tags.map(t => t["name"] ?? "Unknown Name Tag")
+          badges.push(<Badge label={`people:${names.join(", ")}`} />);
+          break;
+      }
+    });
   }
 
   const exportId = String(post.id || post.timestamp);

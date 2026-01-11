@@ -1,4 +1,4 @@
-import { type Formattable, type FormattedPost, type PostFragment } from "../types.ts";
+import {type Formattable, type FormattedPost, type PostFragment, type TagHolder} from "../types.ts";
 
 // TODO: some of this can be discovered at runtime from the data itself, but some hard types are useful for
 // recognition and shape. Implement that dynamic stuff at some point and instead use this kind of stuff to
@@ -31,7 +31,25 @@ export interface Attachment {
     data?: AttachmentData[];
 }
 
-export interface Tag {
+export interface FacebookTag extends TagHolder {
+    tagCollection: string;
+}
+
+export interface PersonTag {
+    tagCollection: "people";
+}
+
+export type FacebookTagTypes = PersonTag; // TODO: make this a union as we add other tag types, or remove it altogether
+
+export class PeopleTagObject implements FacebookTag, PersonTag {
+    tagCollection: "people" = "people";
+    [key: string]: string;
+    constructor(tag: RawPeopleTag) {
+        this["name"] = tag.name ?? "Facebook User";
+    }
+}
+
+export interface RawPeopleTag {
     name?: string;
 }
 
@@ -89,7 +107,7 @@ export interface RawPost {
     title?: string;
     data?: RawDataEntry[];
     attachments?: Attachment[];
-    tags?: Tag[];
+    tags?: RawPeopleTag[];
     // other optional fields occasionally appear in the dump
     created_time?: string | number;
     created?: string | number;
@@ -114,7 +132,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
     title?: string;
     data?: RawDataEntry[];
     attachments?: Attachment[];
-    tags?: Tag[];
+    tags?: RawPeopleTag[];
     created_time?: string | number;
     created?: string | number;
     id?: string | number;
@@ -189,8 +207,10 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
             }
         }
 
-        const tags: string[] = Array.isArray(this.tags)
-            ? this.tags.filter((t) => t && typeof t.name === 'string').map((t) => t.name as string)
+        // TODO: use the object instead of the string value of the data, since we know what _kind_ of tag it is now
+        const tags: TagHolder[] = Array.isArray(this.tags)
+            ? this.tags.map(t => new PeopleTagObject(t))
+            // ? this.tags.filter((t) => t && typeof t.data === 'string').map((t) => t.data as string)
             : [];
 
         const fragments = this.dataObjects?.map(obj => obj.formatted) || [];

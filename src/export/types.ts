@@ -2,13 +2,18 @@ export interface Formattable<T> {
     readonly formatted: T;
 }
 
+
+export type TagHolder = {
+    [key: string]: string | undefined;
+};
+
 export interface FormattedPost {
     id?: string | number | null;
     text: string;
     timestamp?: string | number | null;
     attachmentsCount?: number;
     meaningfulEntriesCount: number;
-    tags?: string[];
+    tags?: TagHolder[];
     fragments?: PostFragment[];
     attachmentMedia?: PostFragment[];
     _raw?: any;
