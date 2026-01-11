@@ -1,4 +1,4 @@
-import {type Formattable, type FormattedPost, type PostFragment, UnknownRawData} from "../types.ts";
+import {type Formattable, type FormattedPost, type PostFragment} from "../types.ts";
 
 export interface Coordinate {
     latitude: number;
@@ -335,6 +335,22 @@ export function fromMediaMetadata(data: MediaMetadataEntry): MediaMetadataClassT
         }
     }
     return new MediaMetadata(data);
+}
+
+export class UnknownRawData extends RawData {
+    constructor(data: RawDataEntry) {
+        super(data);
+    }
+
+    public override get formatted(): PostFragment {
+        return {
+            text: "",
+            timestamp: this.relevantTimestamp,
+            isUnknown: true,
+            isMeaningful: false,
+            _raw: this._rawSource,
+        };
+    }
 }
 
 export type DataClassTypes = RawData | PostEntry | MediaEntry | UnknownRawData;

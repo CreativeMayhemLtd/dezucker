@@ -2,8 +2,6 @@
 // recognition and shape. Implement that dynamic stuff at some point and instead use this kind of stuff to
 // inform the shape the reader recognizes / outputs.
 
-import {RawData, type RawDataEntry} from "./facebook/types.ts";
-
 export interface Formattable<T> {
   readonly formatted: T;
 }
@@ -32,21 +30,5 @@ export interface PostFragment {
   isUnknown?: boolean;
   isMeaningful?: boolean;
   _raw?: any;
-}
-
-export class UnknownRawData extends RawData {
-  constructor(data: RawDataEntry) {
-    super(data);
-  }
-
-  public override get formatted(): PostFragment {
-    return {
-      text: "",
-      timestamp: this.relevantTimestamp,
-      isUnknown: true,
-      isMeaningful: false,
-      _raw: this._rawSource,
-    };
-  }
 }
 
