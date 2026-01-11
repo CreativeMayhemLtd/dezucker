@@ -1,4 +1,5 @@
-import { type RawPost, type FormattedPost, PostEntry, MediaEntry, type RawDataEntry, fromData, RawPostObject } from "./types";
+import { type FormattedPost } from "./types";
+import {fromData, MediaEntry, PostEntry, type RawDataEntry, type RawPost, RawPostObject} from "./facebook/types.ts";
 
 export default class PostsReader {
   constructor() {
@@ -35,7 +36,7 @@ export default class PostsReader {
   }
 
   get posts(): FormattedPost[] {
-    return this.rawPosts.map(rp => rp as FormattedPost);
+    return this.rawPosts.map(rp => rp.formatted);
   }
 
   get totalPosts(): number {
