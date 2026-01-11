@@ -1,7 +1,7 @@
 /** @jsx h */
 /** @jsxFrag Fragment */
 import { h, Fragment } from "./renderer.tsx";
-import type { FormattedPost, PostFragment } from "./types.tsx";
+import type { FormattedPost } from "./types.tsx";
 import { pluginRegistry } from "./plugins/registry";
 
 /**

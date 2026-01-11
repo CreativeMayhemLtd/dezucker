@@ -36,7 +36,7 @@ export default class PostsReader {
   }
 
   get posts(): FormattedPost[] {
-    return this.rawPosts.map(rp => rp as FormattedPost);
+    return this.rawPosts.map(rp => rp.formatted);
   }
 
   get totalPosts(): number {

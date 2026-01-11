@@ -1,4 +1,8 @@
-import {type Formattable, type FormattedPost, type PostFragment} from "../types.ts";
+import { type Formattable, type FormattedPost, type PostFragment } from "../types.ts";
+
+// TODO: some of this can be discovered at runtime from the data itself, but some hard types are useful for
+// recognition and shape. Implement that dynamic stuff at some point and instead use this kind of stuff to
+// inform the shape the reader recognizes / outputs. See RawData for a start at this.
 
 export interface Coordinate {
     latitude: number;
