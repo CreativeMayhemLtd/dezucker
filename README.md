@@ -31,17 +31,21 @@ For issues, for now please only open issues for new structures introduced after 
 
 ### Design decisions
 
-Yes, this is under contributing, because we're not tied to Bun, or even typescript, just strong typing, so that simple code can be written. This is quick-and-dirty right now, but we'd like to see this usable as a package, not just a tool. We also don't want to tie it to platform, hence the (_current_) choice to use TypeScript and Bun.
+The project prioritizes modularity and strong typing, ensuring it can eventually be consumed as a library or package.
 
-If you have ideas, We're open to them. We have experience in a ton of languages of varying complexity and age among us, and we can contribute at the same level in nearly all of them.
+- **Runtime**: Currently uses Bun.
+- **Rendering**: Zero-dependency, domain-bound system using TSX. Data objects handle their own representations.
+- **Architecture**: Separation of concerns between raw data, business logic, and component-based views.
+
+If you have ideas, we're open to them. We have experience in a ton of languages of varying complexity and age among us, and we can contribute at the same level in nearly all of them.
 
 ### Licensing 
 
 Right now? Public domain. As others contribute / things get more complicated? That might change, but it will be open, and we don't want anyone making money off this -- even us. If there IS a money-making organization, it will be a non-profit (in every country there is such a thing), and it will contribute said money to causes that seek the decoupling of human society from social media, and putting it back to something shared, not something parasitic or farmed for someone else's profit.
 
 ## TODO
-- [ ] handle images
+- [X] handle images
 - [ ] handle linking tags to other data (at:// urls, etc)
-- [ ] handle repost plugin interface
+- [X] handle repost plugin interface
 - [ ] bsky repost plugin
 - [ ] long post services repost plugins

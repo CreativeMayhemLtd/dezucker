@@ -5,7 +5,9 @@
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",
-    "jsx": "react-jsx",
+    // this is the dumbest fucking thing ever; you have to use the react pragma to avoid using the react library
+    // they should just rename `react` to `functional` or something
+    "jsx": "react",
     "allowJs": true,
 
     // Bundler mode
