@@ -9,6 +9,8 @@ const collectionKeys: collectionKeysType = {
     people: "people",
 };
 
+let _runtimeMergedKeys: collectionKeysType | null = null;
+
 export async function storageFactory(pluginKeys?: string[]): Promise<InternalStorage> {
     if (pluginKeys) return initStorage(withPluginKeys(pluginKeys));
     return initStorage();
@@ -19,10 +21,14 @@ function withPluginKeys(pluginKeys: string[]): { [key: string]: string } {
     for (const key of pluginKeys) {
         keySet.add({ [key]: key });
     }
-    return {
+    if (_runtimeMergedKeys) {
+        keySet.add(_runtimeMergedKeys);
+    }
+    _runtimeMergedKeys = {
         ...keySet.values().next().value,
-        ...collectionKeys, // collectionKeys (internal keys) have priority over plugin keys.
-    };
+        ...collectionKeys,
+    }
+    return _runtimeMergedKeys;
 }
 
 async function initStorage(initialKeys: collectionKeysType = { ...collectionKeys }): Promise<InternalStorage> {
