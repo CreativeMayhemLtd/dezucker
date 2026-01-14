@@ -1,13 +1,23 @@
 import PostsReader from "./src/post-reader";
 import { renderPostsPage } from "./src/views.tsx";
 import { pluginRegistry } from "./src/plugins/registry";
+// TODO: manage this in another file we import here
 import { internalJsonPlugin } from "./src/plugins/internal-json";
 import { markdownExportPlugin } from "./src/plugins/markdown-export";
 import { exportOrchestrator } from "./src/plugins/orchestrator";
-
+import { storageFactory } from "./src/types.ts";
 // Register default internal plugins
 pluginRegistry.register(internalJsonPlugin);
 pluginRegistry.register(markdownExportPlugin);
+
+// Inject plugin database collection keys into storage factory
+const storage = await storageFactory(pluginRegistry.pluginDatabaseCollectionKeys);
+const dezuckerPersistedMetadata: { version: number }[] = await storage.dataFor("dezucker");
+let currentVersion = dezuckerPersistedMetadata[dezuckerPersistedMetadata.length - 1]?.version || 0;
+// TODO: inject storage into another function that builds the above and manages the below
+if (currentVersion < 1) {
+	await storage.push("dezucker", { version: 1 });
+}
 
 // TODO: Make a real service and inject it
 const port = Number(process.env.PORT || 3000);
@@ -20,7 +30,7 @@ Bun.serve({
 	async fetch(req) {
 		const url = new URL(req.url);
 		const pathname = url.pathname;
-		const postReader = new PostsReader();
+		const postReader = new PostsReader(); // TODO: hoist this up and use storage / plugins better
 		await postReader.initialize();
 
 		if (pathname === "/health") {

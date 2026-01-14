@@ -135,6 +135,17 @@ export function MediaGallery({ items }: { items: { uri: string; alt?: string }[]
 }
 
 /**
+ * Renders a view for a people tag
+ */
+export function PeopleTag({ tag }: { tag: any }) {
+  // TODO: Implement link to a full div with known information (using storage)
+  // TODO: Implement edit button on div
+  return (
+      <Badge label={`person:${tag.name}`} />
+  );
+}
+
+/**
  * Renders a post card with its metadata.
  */
 export function PostCard({ post, when, key }: { post: FormattedPost; when: string; key?: any }) {
@@ -201,12 +212,11 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
   if (post.tags && post.tags.length > 0) { // TODO: handle links
     const tags = post.tags;
     const tagCollections = new Set<string>(tags.map(t => t.tagCollection ?? "unknown"));
-    tagCollections.forEach(collection => {
-      //  TODO: handle other collection types here
-      switch (collection) {
+    tags.forEach(tag => {
+      switch (tag.tagCollection) {
+        //  TODO: handle other collection types here
         case "people":
-          const names = tags.map(t => t["name"] ?? "Unknown Name Tag")
-          badges.push(<Badge label={`people:${names.join(", ")}`} />);
+          badges.push(<PeopleTag tag={tag} />);
           break;
       }
     });
