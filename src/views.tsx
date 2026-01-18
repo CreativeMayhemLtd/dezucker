@@ -60,9 +60,10 @@ export function PostsPage({ page, pageSize, sortBy, order, items, total }: Posts
           Per page: {presets.map((s, i) => (
             <span key={s}>
               <a href={`/?page=1&pageSize=${s}&sort=${encodeURIComponent(sortBy)}&order=${encodeURIComponent(order)}`}>{s}</a>
-              {i < presets.length - 1 && " | "}
+              {" | "}
             </span>
           ))}
+          <a href={`/?page=1&pageSize=${total}&sort=${encodeURIComponent(sortBy)}&order=${encodeURIComponent(order)}`}>All</a>
         </span>
         
         <form method="get" style="display:inline-block;margin-left:8px;vertical-align:middle">

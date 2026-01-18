@@ -35,6 +35,10 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           a{color:#1877f2;text-decoration:none}
           a:hover{text-decoration:underline}
           select{padding:4px 8px;border-radius:6px;border:1px solid #ddd}
+          .person-record-panel{display:none;position:fixed;top:20px;right:20px;width:300px;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:16px;z-index:1000;border:1px solid #ebedf0}
+          .person-record-content h3{margin-top:0;color:#1c1e21}
+          .person-record-close{position:absolute;top:8px;right:8px;cursor:pointer;color:#65676b;font-size:18px;font-weight:bold}
+          .person-record-close:hover{color:#1c1e21}
         `}</style>
         <script>{`
           function toggleDebug(id) {
@@ -70,6 +74,20 @@ export function Layout({ title, children }: { title: string; children?: any }) {
               alert('Export failed: ' + err.message);
             }
           }
+
+          function showPersonRecord(name) {
+            const panel = document.getElementById('person-record-panel');
+            if (panel) {
+              panel.innerHTML = \`
+                <span class="person-record-close" onclick="this.parentElement.style.display='none'">×</span>
+                <div class="person-record-content">
+                  <h3>Person Record</h3>
+                  <p><strong>Name:</strong> \${name}</p>
+                </div>
+              \`;
+              panel.style.display = 'block';
+            }
+          }
         `}</script>
       </head>
       <body>
@@ -87,6 +105,7 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           </div>
         </header>
         {children}
+        <div id="person-record-panel" className="person-record-panel"></div>
       </body>
     </html>
   );
@@ -138,10 +157,14 @@ export function MediaGallery({ items }: { items: { uri: string; alt?: string }[]
  * Renders a view for a people tag
  */
 export function PeopleTag({ tag }: { tag: any }) {
-  // TODO: Implement link to a full div with known information (using storage)
   // TODO: Implement edit button on div
   return (
-      <Badge label={`person:${tag.name}`} />
+    <span 
+      className="badge clickable" 
+      onclick={`showPersonRecord('${tag.name.replace(/'/g, "\\'")}')`}
+    >
+      person:{tag.name}
+    </span>
   );
 }
 

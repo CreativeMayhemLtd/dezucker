@@ -12,6 +12,9 @@ pluginRegistry.register(markdownExportPlugin);
 
 // Inject plugin database collection keys into storage factory
 const storage = await storageFactory(pluginRegistry.pluginDatabaseCollectionKeys);
+const postReader = new PostsReader(storage);
+await postReader.initialize();
+
 const dezuckerPersistedMetadata: { version: number }[] = await storage.dataFor("dezucker");
 let currentVersion = dezuckerPersistedMetadata[dezuckerPersistedMetadata.length - 1]?.version || 0;
 // TODO: inject storage into another function that builds the above and manages the below
@@ -30,8 +33,6 @@ Bun.serve({
 	async fetch(req) {
 		const url = new URL(req.url);
 		const pathname = url.pathname;
-		const postReader = new PostsReader(); // TODO: hoist this up and use storage / plugins better
-		await postReader.initialize();
 
 		if (pathname === "/health") {
 			return new Response("OK", { status: 200 }); // TODO: handle postreader health check

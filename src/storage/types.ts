@@ -71,7 +71,7 @@ function initialData(): { [key: string] : any[] } {
 
 const adapter = new JSONFile('./data/dezucker.json');
 
-interface InternalStorage {
+export interface InternalStorage {
     init(): Promise<void>;
     push(key: keyof typeof collectionKeys, data: any): Promise<void>;
     update(key: keyof typeof collectionKeys, updateFn: (collection: any[]) => void): Promise<void>;
