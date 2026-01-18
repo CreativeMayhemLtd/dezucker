@@ -1,19 +1,22 @@
 {
   "name": "dezucker",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "module": "index.ts",
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun index.ts"
+    "start": "bun index.ts",
+    "test:integration": "bun tests/integration/index.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "^1.3.5"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@atproto/common-web": "^0.4.11",
+    "lowdb": "^7.0.1",
     "tsx": "^4.21.0"
   }
 }

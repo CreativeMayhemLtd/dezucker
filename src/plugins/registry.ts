@@ -22,6 +22,10 @@ export class PluginRegistry {
   public listPlugins(): PluginMetadata[] {
     return Array.from(this.plugins.values()).map(p => p.metadata);
   }
+
+  public get pluginDatabaseCollectionKeys(): string[] {
+    return Array.from(this.plugins.values()).map(p => p.sink.databaseCollectionKey).filter(Boolean) as string[];
+  }
 }
 
 // Export a singleton instance
