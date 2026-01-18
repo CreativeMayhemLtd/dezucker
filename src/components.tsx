@@ -83,9 +83,32 @@ export function Layout({ title, children }: { title: string; children?: any }) {
                 <div class="person-record-content">
                   <h3>Person Record</h3>
                   <p><strong>Name:</strong> \${name}</p>
+                  <a href="/person?name=\${encodeURIComponent(name)}" style="display:block;margin-top:12px;color:#1877f2;font-size:14px">Edit Person Record</a>
                 </div>
               \`;
               panel.style.display = 'block';
+            }
+          }
+
+          async function addUrlToPerson(name) {
+            const url = prompt("Enter URL for " + name + ":");
+            if (!url) return;
+            
+            try {
+              const response = await fetch('/api/person/url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, url })
+              });
+              
+              const result = await response.json();
+              if (result.success) {
+                window.location.reload();
+              } else {
+                alert('Failed to add URL: ' + result.error);
+              }
+            } catch (err) {
+              alert('Error: ' + err.message);
             }
           }
         `}</script>
