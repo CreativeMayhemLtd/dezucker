@@ -4,7 +4,7 @@ import { pluginRegistry } from "./src/plugins/registry";
 // TODO: manage this in another file we import here
 import { internalJsonPlugin } from "./src/plugins/internal-json";
 import { markdownExportPlugin } from "./src/plugins/markdown-export";
-import { exportOrchestrator } from "./src/plugins/orchestrator";
+import { ExportOrchestrator } from "./src/plugins/orchestrator";
 import { storageFactory } from "./src/types.ts";
 // Register default internal plugins
 pluginRegistry.register(internalJsonPlugin);
@@ -14,6 +14,8 @@ pluginRegistry.register(markdownExportPlugin);
 const storage = await storageFactory(pluginRegistry.pluginDatabaseCollectionKeys);
 const postReader = new PostsReader(storage);
 await postReader.initialize();
+
+const exportOrchestrator = new ExportOrchestrator(storage);
 
 const dezuckerPersistedMetadata: { version: number }[] = await storage.dataFor("dezucker");
 let currentVersion = dezuckerPersistedMetadata[dezuckerPersistedMetadata.length - 1]?.version || 0;
