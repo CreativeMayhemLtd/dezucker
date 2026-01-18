@@ -16,7 +16,7 @@ export interface FormattedPost {
     meaningfulEntriesCount: number;
     tags?: TagHolder[];
     fragments?: PostFragment[];
-    attachmentMedia?: PostFragment[];
+    media?: PostFragment[];
     _raw?: any;
 }
 

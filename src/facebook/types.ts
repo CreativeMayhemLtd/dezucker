@@ -207,23 +207,18 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
             }
         }
 
-        // TODO: use the object instead of the string value of the data, since we know what _kind_ of tag it is now
         const tags: TagHolder[] = Array.isArray(this.tags)
             ? this.tags.map(t => new PeopleTagObject(t))
-            // ? this.tags.filter((t) => t && typeof t.data === 'string').map((t) => t.data as string)
             : [];
 
-        const fragments = this.dataObjects?.map(obj => obj.formatted) || [];
-        const meaningfulEntriesCount = fragments.filter(f => f.isMeaningful).length;
-
-        const attachmentMedia: PostFragment[] = [];
+        const mediaMap = new Map<string, PostFragment>();
         if (Array.isArray(this.attachments)) {
             for (const a of this.attachments) {
                 if (a && Array.isArray(a.data)) {
                     for (const d of a.data) {
                         const uri = d.media?.uri || d.uri;
                         if (uri) {
-                            attachmentMedia.push({
+                            mediaMap.set(uri, {
                                 text: "",
                                 timestamp: d.update_timestamp || timestamp,
                                 mediaUri: uri,
@@ -237,6 +232,19 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
             }
         }
 
+        const allFragments = this.dataObjects?.map(obj => obj.formatted) || [];
+        const fragments: PostFragment[] = [];
+
+        for (const f of allFragments) {
+            if (f.mediaUri && mediaMap.has(f.mediaUri)) {
+                // Already in media, skip adding to fragments
+                continue;
+            }
+            fragments.push(f);
+        }
+
+        const meaningfulEntriesCount = fragments.filter(f => f.isMeaningful).length;
+
         return {
             id,
             text,
@@ -245,7 +253,7 @@ export class RawPostObject implements RawPost, Formattable<FormattedPost> {
             meaningfulEntriesCount,
             tags,
             fragments,
-            attachmentMedia,
+            media: Array.from(mediaMap.values()),
             _raw: this._rawSource,
         };
     }
