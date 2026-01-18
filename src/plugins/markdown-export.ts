@@ -24,10 +24,7 @@ export class MarkdownTransformer implements DataTransformer<string, MarkdownConf
     }
 
     // Add media references
-    const media = [
-      ...(post.fragments?.filter(f => f.isPhoto) || []),
-      ...(post.attachmentMedia || [])
-    ];
+    const media = post.media || [];
 
     if (media.length > 0) {
       sections.push("## Media");
@@ -89,7 +86,7 @@ export class LocalFileSink implements OutputSink<string, MarkdownConfig> {
       
       for (let i = 0; i < context.media.length; i++) {
         const m = context.media[i];
-        if (m.mediaUri) {
+        if (m && m.mediaUri) {
           const ext = m.mediaUri.split(".").pop() || "jpg";
           const sourcePath = join("data", m.mediaUri);
           const destFilename = `post-${context.timestamp}-${i}.${ext}`;

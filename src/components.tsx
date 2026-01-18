@@ -288,16 +288,14 @@ export function PostCard({ post, when, key }: { post: FormattedPost; when: strin
             {JSON.stringify(frag._raw, null, 2)}
           </pre>
         );
-        // We could optionally add more badges here if we wanted to toggle specific fragments,
-        // but for now let's stick to the main post toggle for the entries badge.
       }
     });
   }
 
-  if (post.attachmentMedia && post.attachmentMedia.length > 0) {
-    post.attachmentMedia.forEach((media) => {
+  if (post.media && post.media.length > 0) {
+    post.media.forEach((media) => {
       if (media.webUri && media.isPhoto) {
-        mediaItems.push({ uri: media.webUri });
+        mediaItems.push({ uri: media.webUri, alt: media.text });
       }
     });
   }
