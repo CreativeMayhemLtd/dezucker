@@ -107,7 +107,7 @@ interface PersonRecordPageProps {
  */
 export function PersonRecordPage({ name, urls = [] }: PersonRecordPageProps) {
   return (
-    <Layout title={`Person Record — ${name}`}>
+    <Layout title={name}>
       <div className="controls">
         <a href="/">Back to Posts</a>
         <span style="margin-left:20px; font-weight:bold">{name}</span>

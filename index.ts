@@ -81,6 +81,20 @@ Bun.serve({
 			return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 		}
 
+		if (pathname === "/api/person" && req.method === "GET") {
+			const name = url.searchParams.get("name");
+			if (!name) return new Response(JSON.stringify({ success: false, error: "Missing name" }), { status: 400 });
+
+			const people = await storage.dataFor("people");
+			const person = people.find(p => p.name === name);
+
+			if (!person) return new Response(JSON.stringify({ success: false, error: "Person not found" }), { status: 404 });
+
+			return new Response(JSON.stringify(person), {
+				headers: { "Content-Type": "application/json" },
+			});
+		}
+
 		if (pathname === "/api/person/url" && req.method === "POST") {
 			try {
 				const { name, url } = await req.json();
