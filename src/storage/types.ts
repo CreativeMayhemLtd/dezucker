@@ -9,6 +9,8 @@ const collectionKeys: collectionKeysType = {
     people: "people",
 };
 
+let _runtimeMergedKeys: collectionKeysType | null = null;
+
 export async function storageFactory(pluginKeys?: string[]): Promise<InternalStorage> {
     if (pluginKeys) return initStorage(withPluginKeys(pluginKeys));
     return initStorage();
@@ -19,16 +21,29 @@ function withPluginKeys(pluginKeys: string[]): { [key: string]: string } {
     for (const key of pluginKeys) {
         keySet.add({ [key]: key });
     }
-    return {
+    if (_runtimeMergedKeys) {
+        keySet.add(_runtimeMergedKeys);
+    }
+    _runtimeMergedKeys = {
         ...keySet.values().next().value,
-        ...collectionKeys, // collectionKeys (internal keys) have priority over plugin keys.
-    };
+        ...collectionKeys,
+    }
+    return _runtimeMergedKeys;
 }
 
 async function initStorage(initialKeys: collectionKeysType = { ...collectionKeys }): Promise<InternalStorage> {
     const storage: InternalStorage = {
         async push(key: keyof typeof initialKeys, data: any): Promise<void> {
             await push(key, getDatabase(), data);
+        },
+        async update(key: keyof typeof initialKeys, updateFn: (collection: any[]) => void): Promise<void> {
+            const db = getDatabase();
+            await db.update((data) => {
+                if (data[key] == null) {
+                    throw new Error(`Collection ${String(key)} does not exist.`);
+                }
+                updateFn(data[key]);
+            });
         },
         async dataFor(key: keyof typeof initialKeys): Promise<any[]> {
             return dataFor(key, getDatabase());
@@ -56,9 +71,10 @@ function initialData(): { [key: string] : any[] } {
 
 const adapter = new JSONFile('./data/dezucker.json');
 
-interface InternalStorage {
+export interface InternalStorage {
     init(): Promise<void>;
     push(key: keyof typeof collectionKeys, data: any): Promise<void>;
+    update(key: keyof typeof collectionKeys, updateFn: (collection: any[]) => void): Promise<void>;
     dataFor(key: keyof typeof collectionKeys): Promise<any[]>;
     collectionKeys: typeof collectionKeys;
 }

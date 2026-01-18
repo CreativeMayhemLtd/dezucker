@@ -35,6 +35,11 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           a{color:#1877f2;text-decoration:none}
           a:hover{text-decoration:underline}
           select{padding:4px 8px;border-radius:6px;border:1px solid #ddd}
+          .person-record-panel{display:none;position:fixed;top:20px;right:20px;width:450px;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);padding:16px;z-index:1000;border:1px solid #ebedf0}
+          .person-record-content h3{margin-top:0;color:#1c1e21}
+          .person-record-close{position:absolute;top:8px;right:8px;cursor:pointer;color:#65676b;font-size:18px;font-weight:bold}
+          .person-record-close:hover{color:#1c1e21}
+          #person-record-collections-list, #person-record-collections-details{font-size:11px}
         `}</style>
         <script>{`
           function toggleDebug(id) {
@@ -70,6 +75,89 @@ export function Layout({ title, children }: { title: string; children?: any }) {
               alert('Export failed: ' + err.message);
             }
           }
+
+          async function showPersonRecord(name) {
+            const panel = document.getElementById('person-record-panel');
+            if (panel) {
+              panel.innerHTML = \`
+                <span class="person-record-close" onclick="this.parentElement.style.display='none'">×</span>
+                <div class="person-record-content">
+                  <h3>Person</h3>
+                  <p><strong>Name:</strong> \${name}</p>
+                  <div id="person-record-collections-list">Loading collections...</div>
+                  <div id="person-record-collections-details" style="margin-top:12px; border-top:1px solid #ebedf0; padding-top:12px; display:none"></div>
+                  <a href="/person?name=\${encodeURIComponent(name)}" style="display:block;margin-top:12px;color:#1877f2;font-size:14px">Edit</a>
+                </div>
+              \`;
+              panel.style.display = 'block';
+
+              try {
+                const response = await fetch('/api/person?name=' + encodeURIComponent(name));
+                const person = await response.json();
+                
+                const collectionsList = document.getElementById('person-record-collections-list');
+                const collections = Object.keys(person).filter(key => Array.isArray(person[key]) && person[key].length > 0);
+                
+                if (collections.length > 0) {
+                  let html = '<p><strong>Collections:</strong></p><ul style="padding-left:20px; margin:8px 0">';
+                  collections.forEach(key => {
+                    html += \`<li><a href="#" onclick="toggleCollection('\${name.replace(/'/g, "\\\\'")}', '\${key}'); return false;">\${key}</a></li>\`;
+                  });
+                  html += '</ul>';
+                  collectionsList.innerHTML = html;
+                  window._currentPersonData = person;
+                } else {
+                  collectionsList.innerHTML = '<p style="color:#65676b; font-style:italic">No collections found.</p>';
+                }
+              } catch (err) {
+                document.getElementById('person-record-collections-list').innerHTML = '<p style="color:red">Failed to load collections.</p>';
+              }
+            }
+          }
+
+          async function addUrlToPerson(name) {
+            const url = prompt("Enter URL for " + name + ":");
+            if (!url) return;
+            
+            try {
+              const response = await fetch('/api/person/url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, url })
+              });
+              
+              const result = await response.json();
+              if (result.success) {
+                window.location.reload();
+              } else {
+                alert('Failed to add URL: ' + result.error);
+              }
+            } catch (err) {
+              alert('Error: ' + err.message);
+            }
+          }
+
+          function toggleCollection(name, key) {
+            const details = document.getElementById('person-record-collections-details');
+            if (!details) return;
+
+            const person = window._currentPersonData;
+            if (!person || !person[key]) return;
+
+            const items = person[key];
+            let html = "<h4>" + key + "</h4><ul style='padding-left:20px; margin:8px 0'>";
+            items.forEach(item => {
+              if (typeof item === 'string' && (item.startsWith('http://') || item.startsWith('https://'))) {
+                html += "<li><a href='" + item + "' target='_blank' rel='noopener noreferrer'>" + item + "</a></li>";
+              } else {
+                html += "<li>" + item + "</li>";
+              }
+            });
+            html += "</ul>";
+
+            details.innerHTML = html;
+            details.style.display = "block";
+          }
         `}</script>
       </head>
       <body>
@@ -87,6 +175,7 @@ export function Layout({ title, children }: { title: string; children?: any }) {
           </div>
         </header>
         {children}
+        <div id="person-record-panel" className="person-record-panel"></div>
       </body>
     </html>
   );
@@ -138,10 +227,14 @@ export function MediaGallery({ items }: { items: { uri: string; alt?: string }[]
  * Renders a view for a people tag
  */
 export function PeopleTag({ tag }: { tag: any }) {
-  // TODO: Implement link to a full div with known information (using storage)
   // TODO: Implement edit button on div
   return (
-      <Badge label={`person:${tag.name}`} />
+    <span 
+      className="badge clickable" 
+      onclick={`showPersonRecord('${tag.name.replace(/'/g, "\\'")}')`}
+    >
+      person:{tag.name}
+    </span>
   );
 }
 
