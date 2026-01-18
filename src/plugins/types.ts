@@ -35,6 +35,7 @@ export interface DataTransformer<T, C = void> {
  */
 export interface OutputSink<T, C = void> {
   persist(data: T, context: ExportContext, config?: C): Promise<void>;
+  databaseCollectionKey?: string;
 }
 
 /**

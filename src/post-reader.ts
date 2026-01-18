@@ -1,8 +1,11 @@
-import { type RawPost, type FormattedPost, PostEntry, MediaEntry, type RawDataEntry, fromData, RawPostObject } from "./types";
+import { type FormattedPost } from "./types";
+import {fromData, MediaEntry, PostEntry, type RawDataEntry, type RawPost, RawPostObject} from "./facebook/types.ts";
+import { type InternalStorage } from "./storage/types";
 
 export default class PostsReader {
-  constructor() {
-    // empty
+  private storage: InternalStorage;
+  constructor(storage: InternalStorage) {
+    this.storage = storage;
   }
 
   private rawPosts: RawPostObject[] = [];
@@ -35,7 +38,7 @@ export default class PostsReader {
   }
 
   get posts(): FormattedPost[] {
-    return this.rawPosts.map(rp => rp as FormattedPost);
+    return this.rawPosts.map(rp => rp.formatted);
   }
 
   get totalPosts(): number {
@@ -79,6 +82,26 @@ export default class PostsReader {
   public async initialize(): Promise<void> {
     const mod = await import("../data/your_posts.json", { assert: { type: "json" } });
     this.rawPosts = ((mod as any).default ?? mod).map((item: RawPost) => RawPostObject.fromData(item));
+    
+    // Ingress step: persistence of discovered people
+    for (const post of this.rawPosts) {
+      const formatted = post.formatted;
+      if (formatted.tags && formatted.tags.length > 0) {
+        for (const tag of formatted.tags) {
+          // PeopleTagObject has a name property
+          const name = (tag as any).name;
+          if (name) {
+            await this.storage.update('people', (people) => {
+              const exists = people.find(p => p.name === name);
+              if (!exists) {
+                people.push({ name });
+              }
+            });
+          }
+        }
+      }
+    }
+
     this.updateSorting();
   }
 

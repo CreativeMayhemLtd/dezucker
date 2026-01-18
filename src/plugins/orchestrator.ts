@@ -1,4 +1,4 @@
-import type { FormattedPost } from "../types";
+
 import { pluginRegistry } from "./registry";
 import type { ExportContext } from "./types";
 
