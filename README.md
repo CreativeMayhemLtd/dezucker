@@ -22,6 +22,13 @@ Then open http://localhost:3000 in your browser.
 The server exposes:
 - `/` - static UI to browse the posts
 - `/posts?page=1&pageSize=20` - paginated JSON of formatted post objects
+- `/person?name={Name}` - full record view for a specific person
+- `/api/person?name={Name}` - JSON record for a specific person
+- `/api/person/url` - POST endpoint to add a URL to a person's record
+
+## Storage
+
+Metadata and person records are persisted in `data/dezucker.json` using `lowdb`. This file is created automatically on first run.
 
 ## Contributing
 
