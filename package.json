@@ -6,7 +6,12 @@
   "private": true,
   "scripts": {
     "start": "bun index.ts",
-    "test:integration": "bun tests/integration/index.ts"
+    "test:integration": "bun tests/integration/index.ts",
+    "build:win:x64": "bun build --compile --target=bun-win-x64-baseline index.ts --outfile=target/winX64/dezucker.exe",
+    "build:linux:x64": "bun build --compile --target=bun-linux-x64-baseline index.ts --outfile=target/linuxX64/dezucker",
+    "build:linux:arm64": "bun build --compile --target=bun-linux-arm64 index.ts --outfile=target/linuxArm64/dezucker",
+    "build:macos:x64": "bun build --compile --target=bun-darwin-x64-baseline index.ts --outfile=target/macX64/dezucker",
+    "build:macos:arm64": "bun build --compile --target=bun-darwin-arm64 index.ts --outfile=target/macArm64/dezucker"
   },
   "devDependencies": {
     "@types/bun": "^1.3.5"

@@ -1,24 +1,30 @@
 
 import { pluginRegistry } from "./registry";
 import type { ExportContext } from "./types";
+import type { InternalStorage } from "../storage/types";
+import type {FormattedPost} from "../export/types.ts";
 
 export class ExportOrchestrator {
+  private storage?: InternalStorage;
+
+  constructor(storage?: InternalStorage) {
+    this.storage = storage;
+  }
+
   public async exportPost(slug: string, post: FormattedPost, config?: any): Promise<void> {
     const plugin = pluginRegistry.getPlugin(slug);
-    const media = [
-      ...(post.fragments?.filter(f => f.isPhoto) || []),
-      ...(post.attachmentMedia || [])
-    ];
+    const media = post.media || [];
 
     const context: ExportContext = {
       postId: post.id,
       timestamp: typeof post.timestamp === 'number' ? post.timestamp : Date.now(),
       index: 0,
       total: 1,
-      media
+      media,
+      storage: this.storage!
     };
 
-    const transformedData = await plugin.transformer.transform(post, config);
+    const transformedData = await plugin.transformer.transform(post, context, config);
     await plugin.sink.persist(transformedData, context, config);
   }
 
@@ -27,22 +33,21 @@ export class ExportOrchestrator {
     const total = posts.length;
 
     for (let i = 0; i < total; i++) {
-      const post = posts[i];
-      const media = [
-        ...(post.fragments?.filter(f => f.isPhoto) || []),
-        ...(post.attachmentMedia || [])
-      ];
+      const post = posts[i] || null;
+      const media = post && post.media || [];
+      if (post) {
+        const context: ExportContext = {
+          postId: post.id,
+          timestamp: typeof post.timestamp === 'number' ? post.timestamp : Date.now(),
+          index: i,
+          total,
+          media,
+          storage: this.storage!
+        };
 
-      const context: ExportContext = {
-        postId: post.id,
-        timestamp: typeof post.timestamp === 'number' ? post.timestamp : Date.now(),
-        index: i,
-        total,
-        media
-      };
-
-      const transformedData = await plugin.transformer.transform(post, config);
-      await plugin.sink.persist(transformedData, context, config);
+        const transformedData = await plugin.transformer.transform(post, context, config);
+        await plugin.sink.persist(transformedData, context, config);
+      }
     }
   }
 }

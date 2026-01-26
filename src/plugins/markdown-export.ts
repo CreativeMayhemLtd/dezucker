@@ -7,7 +7,7 @@ export interface MarkdownConfig {
 }
 
 export class MarkdownTransformer implements DataTransformer<string, MarkdownConfig> {
-  transform(post: FormattedPost): string {
+  async transform(post: FormattedPost, context: ExportContext): Promise<string> {
     const date = new Date((Number(post.timestamp) || 0) * 1000).toLocaleString();
     const sections = [
       `# Post ${post.id || post.timestamp}`,
@@ -19,15 +19,12 @@ export class MarkdownTransformer implements DataTransformer<string, MarkdownConf
     ];
 
     if (post.tags && post.tags.length > 0) {
-      sections.push(`**People:** ${post.tags.join(", ")}`);
+      sections.push(`**People:** ${post.tags.map(t => (t as any).name || t).join(", ")}`);
       sections.push("");
     }
 
     // Add media references
-    const media = [
-      ...(post.fragments?.filter(f => f.isPhoto) || []),
-      ...(post.attachmentMedia || [])
-    ];
+    const media = post.media || [];
 
     if (media.length > 0) {
       sections.push("## Media");
@@ -36,6 +33,35 @@ export class MarkdownTransformer implements DataTransformer<string, MarkdownConf
         sections.push(`![Image](./images/post-${post.timestamp}-${idx}.${ext})`);
       });
       sections.push("");
+    }
+
+    // Augment with Person URLs from storage
+    if (post.tags && post.tags.length > 0 && context.storage) {
+      try {
+        const peopleRecords = await context.storage.dataFor('people');
+        const personLinksSections: string[] = [];
+
+        for (const tag of post.tags) {
+          const name = (tag as any).name || (typeof tag === 'string' ? tag : null);
+          if (!name) continue;
+
+          const record = peopleRecords.find((p: any) => p.name === name);
+          if (record && Array.isArray(record.urls) && record.urls.length > 0) {
+            personLinksSections.push(`### Person Links: ${name}`);
+            record.urls.forEach((url: string) => {
+              personLinksSections.push(`- [${url}](${url})`);
+            });
+            personLinksSections.push("");
+          }
+        }
+
+        if (personLinksSections.length > 0) {
+          sections.push("## Links");
+          sections.push(...personLinksSections);
+        }
+      } catch (err) {
+        console.error("[MarkdownTransformer] Failed to fetch person records:", err);
+      }
     }
 
     return sections.join("\n");
@@ -60,7 +86,7 @@ export class LocalFileSink implements OutputSink<string, MarkdownConfig> {
       
       for (let i = 0; i < context.media.length; i++) {
         const m = context.media[i];
-        if (m.mediaUri) {
+        if (m && m.mediaUri) {
           const ext = m.mediaUri.split(".").pop() || "jpg";
           const sourcePath = join("data", m.mediaUri);
           const destFilename = `post-${context.timestamp}-${i}.${ext}`;

@@ -1,4 +1,5 @@
 import type {FormattedPost} from "../types";
+import type {InternalStorage} from "../storage/types";
 
 /**
  * Metadata identifying a plugin.
@@ -20,6 +21,7 @@ export interface ExportContext {
   total: number;
   directory?: string;
   media?: FormattedPost["fragments"];
+  storage: InternalStorage;
   [key: string]: any;
 }
 
@@ -27,7 +29,7 @@ export interface ExportContext {
  * Interface for transforming post data into a target format.
  */
 export interface DataTransformer<T, C = void> {
-  transform(post: FormattedPost, config?: C): T | Promise<T>;
+  transform(post: FormattedPost, context: ExportContext, config?: C): T | Promise<T>;
 }
 
 /**
@@ -49,7 +51,7 @@ export interface DezuckerPlugin<T, C = void> {
 }
 
 export class RawJsonTransformer implements DataTransformer<any> {
-  transform(post: FormattedPost): any {
+  transform(post: FormattedPost, _context: ExportContext): any {
     return post._raw || post;
   }
 }

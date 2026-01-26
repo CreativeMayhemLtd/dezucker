@@ -36,5 +36,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # User data 
 data/
 
+# Builds
+target/
+
 # Finder (MacOS) folder config
 .DS_Store
